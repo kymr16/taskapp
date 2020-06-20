@@ -9,10 +9,11 @@
 import UIKit
 import RealmSwift
 
-class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var searchBar: UISearchBar!
+    @IBOutlet weak var emptyView: UIStackView!
     
     // Realmインスタンスを取得する
     let realm = try! Realm()
@@ -23,11 +24,22 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+
         tableView.delegate = self
         tableView.dataSource = self
         searchBar.delegate = self
-
+        
+        view.backgroundColor = UIColor.systemGray6
+        tableView.tableFooterView = UIView()
+        tableView.backgroundColor =  UIColor.systemGray6
+        searchBar.barTintColor =  UIColor.systemGray6
+        searchBar.backgroundImage = UIImage()
+        searchBar.searchTextField.backgroundColor = UIColor.white
+        self.navigationController?.navigationBar.barTintColor = UIColor.systemGray6
+        self.navigationController?.navigationBar.isTranslucent  = false
+        self.navigationController?.navigationBar.shadowImage = UIImage()
+        
+        checkTableData(count: taskArray.count)
     }
     
     // データの数（＝セルの数）を返すメソッド
@@ -46,9 +58,9 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
-
         let dateString:String = formatter.string(from: task.date)
-        cell.detailTextLabel?.text = dateString
+        let categoryString:String = task.category
+        cell.detailTextLabel?.text = dateString + " , " + categoryString
 
         return cell
     }
@@ -65,8 +77,8 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
 
     // Delete ボタンが押された時に呼ばれるメソッド
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        
-       if editingStyle == .delete {
+
+        if editingStyle == .delete {
            // 削除するタスクを取得する
            let task = self.taskArray[indexPath.row]
 
@@ -88,7 +100,8 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
                    print("---------------/")
                }
            }
-       }
+        }
+        checkTableData(count: taskArray.count)
     }
     
     //検索窓に入力した時に呼ばれる
@@ -107,6 +120,7 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
         }
         //tableViewを再読み込みする
         tableView.reloadData()
+        checkTableData(count: taskArray.count)
    }
     
     // segue で画面遷移する時に呼ばれる
@@ -138,6 +152,19 @@ class ViewController: UIViewController,UITableViewDelegate, UITableViewDataSourc
        super.viewWillAppear(animated)
         //UITableViewクラスのreloadDataメソッドを呼ぶことで
         //タスク作成/編集画面で変更した情報をTableViewに反映させる
-       tableView.reloadData()
+        tableView.reloadData()
+        checkTableData(count: taskArray.count)
+    
+        //戻るボタンを表示しない
+        self.navigationItem.hidesBackButton = true
    }
+    
+    // テーブルが空の場合はemptyViewを表示する
+    func checkTableData(count:Int) {
+        if count > 0 {
+            emptyView.isHidden = true
+        } else {
+            emptyView.isHidden = false
+        }
+    }
 }

@@ -16,6 +16,8 @@ class InputViewController: UIViewController {
     @IBOutlet weak var contentsTextView: UITextView!
     @IBOutlet weak var datePicker: UIDatePicker!
     @IBOutlet weak var categoryTextField: UITextField!
+    @IBOutlet weak var cancelButton: UIButton!
+    @IBOutlet weak var submitButton: UIButton!
     
     let realm = try! Realm()
     var task: Task!
@@ -31,20 +33,17 @@ class InputViewController: UIViewController {
         contentsTextView.text = task.contents
         datePicker.date = task.date
         categoryTextField.text = task.category
+        
+        view.backgroundColor = UIColor.systemGray6
+        contentsTextView.layer.cornerRadius = 8
+        contentsTextView.layer.borderColor = UIColor.systemGray4.cgColor
+        contentsTextView.layer.borderWidth  = 1
+        cancelButton.layer.cornerRadius = 8
+        submitButton.layer.cornerRadius = 8
     }
     
     //画面が非表示になるとき呼ばれるメソッド
     override func viewWillDisappear(_ animated: Bool) {
-        try! realm.write {
-            self.task.title = self.titleTextField.text!
-            self.task.contents = self.contentsTextView.text
-            self.task.date = self.datePicker.date
-            self.task.category = self.categoryTextField.text!
-            self.realm.add(self.task, update: .modified)
-        }
-        
-        setNotification(task: task)
-
         super.viewWillDisappear(animated)
     }
     
@@ -88,6 +87,25 @@ class InputViewController: UIViewController {
             }
         }
     }
+  
+    @IBAction func cancelButton(_ sender: Any) {
+        self.titleTextField.text = ""
+        self.contentsTextView.text = ""
+        self.categoryTextField.text = ""
+    }
+    
+    @IBAction func submitButton(_ sender: Any) {
+        try! realm.write {
+            self.task.title = self.titleTextField.text!
+            self.task.contents = self.contentsTextView.text
+            self.task.date = self.datePicker.date
+            self.task.category = self.categoryTextField.text!
+            self.realm.add(self.task, update: .modified)
+        }
+        
+        setNotification(task: task)
+    }
+    
     
     @objc func dismissKeyboard(){
         // キーボードを閉じる
