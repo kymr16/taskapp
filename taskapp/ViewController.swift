@@ -9,11 +9,12 @@
 import UIKit
 import RealmSwift
 
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate, UISearchTextFieldDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var emptyView: UIStackView!
+    @IBOutlet weak var label: UILabel!
     
     // Realmインスタンスを取得する
     let realm = try! Realm()
@@ -28,18 +29,42 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         tableView.delegate = self
         tableView.dataSource = self
         searchBar.delegate = self
+        searchBar.searchTextField.delegate = self
         
+        // 背景をタップしたらdismissKeyboardメソッドを呼ぶように設定する
+        let tapGesture: UITapGestureRecognizer = UITapGestureRecognizer(target:self, action:#selector(dismissKeyboard))
+        self.view.addGestureRecognizer(tapGesture)
+    
+        //空の時はemptyViewを表示
+        if taskArray.count > 0 {
+            emptyView.isHidden = true
+            label.isHidden = false
+        } else {
+            emptyView.isHidden = false
+            label.isHidden = false
+        }
+        
+        addLayout()
+    }
+    
+    func addLayout() {
         view.backgroundColor = UIColor.systemGray6
+        
         tableView.tableFooterView = UIView()
         tableView.backgroundColor =  UIColor.systemGray6
+        
         searchBar.barTintColor =  UIColor.systemGray6
         searchBar.backgroundImage = UIImage()
         searchBar.searchTextField.backgroundColor = UIColor.white
-        self.navigationController?.navigationBar.barTintColor = UIColor.systemGray6
+        
+        self.navigationController?.navigationBar.barTintColor = UIColor.white
         self.navigationController?.navigationBar.isTranslucent  = false
         self.navigationController?.navigationBar.shadowImage = UIImage()
-        
-        checkTableData(count: taskArray.count)
+        navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+    }
+    
+    @objc func dismissKeyboard(){
+        view.endEditing(true)
     }
     
     // データの数（＝セルの数）を返すメソッド
@@ -101,7 +126,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                }
            }
         }
-        checkTableData(count: taskArray.count)
+        reloadTableView()
     }
     
     //検索窓に入力した時に呼ばれる
@@ -111,7 +136,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     //カテゴリを検索
-   func searchCategory(searchText: String) {
+    func searchCategory(searchText: String) {
         if(searchBar.text == "") {
             taskArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: true)
         } else {
@@ -120,10 +145,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
         //tableViewを再読み込みする
         tableView.reloadData()
-        checkTableData(count: taskArray.count)
-   }
+        
+    }
     
-    // segue で画面遷移する時に呼ばれる
+      // キーボードを閉じる
+     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+         textField.resignFirstResponder()
+         return true
+     }
+     
+    // segueで画面遷移する時に呼ばれる
     override func prepare(for segue: UIStoryboardSegue, sender: Any?){
         let inputViewController:InputViewController = segue.destination as! InputViewController
 
@@ -148,23 +179,28 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     // 入力画面から戻ってきた時に TableView を更新させる
-   override func viewWillAppear(_ animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
        super.viewWillAppear(animated)
         //UITableViewクラスのreloadDataメソッドを呼ぶことで
         //タスク作成/編集画面で変更した情報をTableViewに反映させる
         tableView.reloadData()
-        checkTableData(count: taskArray.count)
-    
+        reloadTableView()
+
         //戻るボタンを表示しない
         self.navigationItem.hidesBackButton = true
-   }
+    }
     
     // テーブルが空の場合はemptyViewを表示する
-    func checkTableData(count:Int) {
-        if count > 0 {
-            emptyView.isHidden = true
-        } else {
-            emptyView.isHidden = false
-        }
+    func reloadTableView() {
+        tableView.reloadData()
+        DispatchQueue.main.async(execute: {
+            if self.taskArray.count > 0 {
+                self.emptyView.isHidden = true
+                 self.label.isHidden = false
+            } else {
+                self.emptyView.isHidden = false
+                self.label.isHidden = true
+            }
+        })
     }
 }

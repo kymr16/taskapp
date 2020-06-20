@@ -10,36 +10,54 @@ import UIKit
 import RealmSwift
 import UserNotifications
 
-class InputViewController: UIViewController {
+class InputViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate {
 
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var contentsTextView: UITextView!
     @IBOutlet weak var datePicker: UIDatePicker!
     @IBOutlet weak var categoryTextField: UITextField!
     @IBOutlet weak var cancelButton: UIButton!
-    @IBOutlet weak var submitButton: UIButton!
+    @IBOutlet weak var saveButton: UIButton!
     
     let realm = try! Realm()
     var task: Task!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       
-        // 背景をタップしたらdismissKeyboardメソッドを呼ぶように設定する
-        let tapGesture: UITapGestureRecognizer = UITapGestureRecognizer(target:self, action:#selector(dismissKeyboard))
-        self.view.addGestureRecognizer(tapGesture)
-
+        
+        titleTextField.delegate = self
+        contentsTextView.delegate = self
+        categoryTextField.delegate = self
+        
         titleTextField.text = task.title
         contentsTextView.text = task.contents
         datePicker.date = task.date
         categoryTextField.text = task.category
         
-        view.backgroundColor = UIColor.systemGray6
-        contentsTextView.layer.cornerRadius = 8
-        contentsTextView.layer.borderColor = UIColor.systemGray4.cgColor
-        contentsTextView.layer.borderWidth  = 1
+        addLayout()
+        
+        // 背景をタップしたらdismissKeyboardメソッドを呼ぶように設定する
+        let tapGesture: UITapGestureRecognizer = UITapGestureRecognizer(target:self, action:#selector(dismissKeyboard))
+        self.view.addGestureRecognizer(tapGesture)
+        
+        textViewShouldDone()
+    }
+    
+    func addLayout() {
+        self.navigationController?.navigationBar.titleTextAttributes = [.foregroundColor: UIColor.systemIndigo]
+        
         cancelButton.layer.cornerRadius = 8
-        submitButton.layer.cornerRadius = 8
+        cancelButton.layer.borderColor = UIColor.systemIndigo.cgColor
+        cancelButton.layer.borderWidth = 1
+        saveButton.layer.cornerRadius = 8
+        
+        titleTextField.borderStyle = UITextField.BorderStyle.none
+        categoryTextField.borderStyle = UITextField.BorderStyle.none
+        
+        let borderWidth = self.view.frame.size.width - 32
+        titleTextField.addBorderBottom(width: borderWidth)
+        categoryTextField.addBorderBottom(width: borderWidth)
+        contentsTextView.addBorderBottom(width: borderWidth)
     }
     
     //画面が非表示になるとき呼ばれるメソッド
@@ -94,7 +112,7 @@ class InputViewController: UIViewController {
         self.categoryTextField.text = ""
     }
     
-    @IBAction func submitButton(_ sender: Any) {
+    @IBAction func saveButton(_ sender: Any) {
         try! realm.write {
             self.task.title = self.titleTextField.text!
             self.task.contents = self.contentsTextView.text
@@ -106,10 +124,47 @@ class InputViewController: UIViewController {
         setNotification(task: task)
     }
     
-    
     @objc func dismissKeyboard(){
-        // キーボードを閉じる
         view.endEditing(true)
     }
+    
+     // キーボードを閉じる
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+    
+    // textViewにdoneボタンを表示できるようにする
+    func textViewShouldDone() {
+        let toolBar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 40))
 
+        toolBar.barStyle = UIBarStyle.default
+        toolBar.sizeToFit()
+
+        let spacer = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.flexibleSpace, target: self, action: nil)
+        let doneButton = UIBarButtonItem(barButtonSystemItem:UIBarButtonItem.SystemItem.done, target: self,action: #selector(self.dismissKeyboard))
+        
+        toolBar.items = [spacer, doneButton]
+        contentsTextView.inputAccessoryView = toolBar
+    }
+}
+
+extension UITextField {
+    func addBorderBottom(width: CGFloat) {
+        let bottomLine = CALayer()
+        bottomLine.borderColor = UIColor.systemGray5.cgColor
+        bottomLine.borderWidth = 1
+        bottomLine.frame = CGRect(x: 0, y: self.frame.size.height - 1, width: width, height: 1)
+        self.layer.addSublayer(bottomLine)
+    }
+}
+
+extension UITextView {
+    func addBorderBottom(width: CGFloat) {
+        let bottomLine = CALayer()
+        bottomLine.borderColor = UIColor.systemGray5.cgColor
+        bottomLine.borderWidth = 1
+        bottomLine.frame = CGRect(x: 0, y: self.frame.size.height - 1, width: width, height: 1)
+        self.layer.addSublayer(bottomLine)
+    }
 }
